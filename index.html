@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amaka’s Closet</title>
+<style>
+:root{--ivory:#fbf7ef;--navy:#14213d;--teal:#17707a;--teal-d:#0f5159;--line:#e3dccd;--warn:#9a5b00;--bad:#a12626;--ok:#1b6b3a}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,Segoe UI,Roboto,sans-serif;background:var(--ivory);color:var(--navy)}
+a{color:var(--teal-d)}:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+header{background:var(--navy);color:#fff;display:flex;align-items:center;gap:16px;padding:12px 16px;position:sticky;top:0;z-index:5}
+header a{color:#fff;text-decoration:none}header .brand{font-weight:700;font-size:1.15rem;flex:1}
+.badge{background:var(--teal);border-radius:99px;padding:2px 9px;font-size:.8rem;margin-left:4px}
+#banner{background:#fff3cd;color:#5a4300;text-align:center;font-weight:700;font-size:.85rem;padding:6px;letter-spacing:.04em}
+#banner.sandbox{background:#d7ecff;color:#0b3a66}
+main{max-width:1000px;margin:0 auto;padding:16px 16px 96px}
+h1{font-size:1.5rem;margin:.4em 0}h2{font-size:1.15rem;margin:1.2em 0 .4em}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.swatch{height:150px;border-radius:8px;margin-bottom:10px;display:flex;align-items:end;padding:8px;color:#fff;font-size:.8rem}
+select,input{font:inherit;padding:9px;border:1px solid #bdb6a6;border-radius:8px;width:100%;background:#fff;color:var(--navy)}
+label{display:block;font-size:.85rem;margin:8px 0 3px;font-weight:600}
+button,.btn{font:inherit;font-weight:600;background:var(--teal);color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+button:hover,.btn:hover{background:var(--teal-d)}button:disabled{background:#9aa;cursor:not-allowed}
+button.sec{background:#fff;color:var(--navy);border:1px solid var(--navy)}button.sec:hover{background:#efe9db}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:0 0 auto}
+.stock{font-size:.85rem}.low{color:var(--warn)}.out{color:var(--bad)}.muted{color:#5b6479;font-size:.9rem}
+table{width:100%;border-collapse:collapse}td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}td.r,th.r{text-align:right}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-weight:700;font-size:.8rem;background:#e8e2d3}
+.PAID{background:#d6f0de;color:var(--ok)}.AWAITING_BALANCE,.REVIEW,.PENDING{background:#fff0cc;color:var(--warn)}.EXPIRED,.CANCELLED{background:#f5d6d6;color:var(--bad)}
+.alert{padding:12px;border-radius:8px;margin:10px 0}.alert.err{background:#f9e0e0;color:var(--bad)}.alert.warn{background:#fff0cc;color:#6b4300}.alert.ok{background:#d6f0de;color:var(--ok)}
+.mono{font-family:ui-monospace,Consolas,monospace;word-break:break-all}
+.copy{padding:2px 8px;font-size:.8rem;margin-left:6px}
+footer{text-align:center;padding:24px;color:#5b6479;font-size:.85rem}
+#chatBtn{position:fixed;right:16px;bottom:16px;z-index:20;border-radius:99px;padding:14px 20px;box-shadow:0 4px 14px #0004}
+#chat{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:100%;background:#fff;border-left:1px solid var(--line);z-index:30;display:none;flex-direction:column;box-shadow:-6px 0 20px #0003}
+#chat.open{display:flex}#chatHead{background:var(--navy);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+#chatHead button{background:transparent;padding:4px 10px;font-size:1.2rem}
+#chatLog{flex:1;overflow:auto;padding:12px;background:var(--ivory)}
+.msg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px;white-space:pre-wrap}
+.msg.me{background:var(--teal);color:#fff;margin-left:40px}.msg .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.msg .btns button,.msg .btns a{font-size:.85rem;padding:6px 10px;background:#fff;color:var(--teal-d);border:1px solid var(--teal)}
+.msg form button{margin-top:8px}
+@media(max-width:640px){#chat{width:100%}main{padding-bottom:110px}}
+@media(prefers-reduced-motion:no-preference){.card{transition:box-shadow .15s}.card:hover{box-shadow:0 3px 12px #14213d22}}
+</style>
+</head>
+<body>
+<div id="banner" role="status"></div>
+<header>
+  <a class="brand" href="#/">Amaka’s Closet</a>
+  <a href="#/">Shop</a>
+  <a href="#/orders">My orders</a>
+  <a href="#/cart" aria-label="Cart">Cart<span class="badge" id="cartBadge">0</span></a>
+</header>
+<main id="main" aria-live="polite"></main>
+<footer>Made by Team Gritten · Instagram shoppers welcome 💛</footer>
+<button id="chatBtn" aria-haspopup="dialog">💬 Chat with us</button>
+<aside id="chat" role="dialog" aria-label="Shopping assistant">
+  <div id="chatHead"><strong>Amaka’s assistant</strong><button id="chatClose" aria-label="Close chat">✕</button></div>
+  <div id="chatLog"></div>
+</aside>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const naira = (k) => '₦' + (k / 100).toLocaleString('en-NG', { minimumFractionDigits: k % 100 ? 2 : 0 });
+async function api(path, body) {
+  const r = await fetch('/api' + path, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Something went wrong (' + r.status + ')');
+  return j;
+}
+let CONFIG = {}, pollTimer = null;
+const STATUS = { UNPAID: 'Awaiting payment', PENDING: 'Waiting for your payment', AWAITING_BALANCE: 'Part-paid: balance outstanding', PAID: 'Paid and verified', REVIEW: 'Under review by Amaka', EXPIRED: 'Expired: stock released', CANCELLED: 'Cancelled' };
+
+async function init() {
+  CONFIG = await api('/config');
+  const b = $('#banner'); b.textContent = CONFIG.banner; b.className = CONFIG.mode === 'busha' ? 'sandbox' : '';
+  await refreshCart(); route(); chatStart();
+}
+async function refreshCart() { try { const c = await api('/cart'); $('#cartBadge').textContent = c.count; return c; } catch { return { items: [], count: 0, subtotal_kobo: 0 }; } }
+window.addEventListener('hashchange', route);
+setInterval(() => { if (!document.hidden) { refreshCart().then(() => { if (location.hash === '#/cart') viewCart(); }); } }, 6000); // picks up chat cart changes
+
+function route() {
+  clearInterval(pollTimer);
+  const h = location.hash || '#/'; let m;
+  if (h === '#/cart') return viewCart();
+  if (h === '#/checkout') return viewCheckout();
+  if (h === '#/orders') return viewOrders();
+  if ((m = h.match(/^#\/order\/([\w-]+)/))) return viewOrder(m[1]);
+  viewStore();
+}
+const msg = (t, cls = 'err') => `<div class="alert ${cls}" role="alert">${esc(t)}</div>`;
+
+// ---------- store ----------
+async function viewStore() {
+  $('#main').innerHTML = '<p class="muted">Loading the collection…</p>';
+  let products;
+  try { products = (await api('/products')).products; } catch (e) { $('#main').innerHTML = msg(e.message) + '<button onclick="viewStore()">Retry</button>'; return; }
+  $('#main').innerHTML = `<h1>New arrivals</h1><p class="muted">Prices in naira. Stock shown is live.</p><div class="grid">${products.map((p, i) => card(p, i)).join('')}</div>`;
+  products.forEach((p, i) => { ['sz', 'cl'].forEach((k) => $(`#${k}${i}`).addEventListener('change', () => upd(p, i))); $(`#add${i}`).addEventListener('click', () => addToCart(p, i)); upd(p, i); });
+}
+function card(p, i) {
+  const sizes = [...new Set(p.variants.map((v) => v.size))], cols = [...new Set(p.variants.map((v) => v.colour))];
+  return `<article class="card"><div class="swatch" style="background:linear-gradient(135deg,hsl(${p.hue} 45% 30%),hsl(${(p.hue + 40) % 360} 50% 55%))" role="img" aria-label="${esc(p.name)} colour swatch">${esc(p.name)}</div>
+  <strong>${esc(p.name)}</strong><div>${naira(p.price_kobo)}</div><div class="muted">${esc(p.description)}</div>
+  <label for="sz${i}">Size</label><select id="sz${i}">${sizes.map((s) => `<option>${s}</option>`).join('')}</select>
+  <label for="cl${i}">Colour</label><select id="cl${i}">${cols.map((s) => `<option>${s}</option>`).join('')}</select>
+  <label for="q${i}">Quantity</label><input id="q${i}" type="number" min="1" max="10" value="1">
+  <div class="stock" id="st${i}" style="margin:8px 0"></div><div id="er${i}"></div><button id="add${i}">Add to cart</button></article>`;
+}
+function cur(p, i) { return p.variants.find((v) => v.size === $(`#sz${i}`).value && v.colour === $(`#cl${i}`).value); }
+function upd(p, i) {
+  const v = cur(p, i), s = $(`#st${i}`);
+  s.className = 'stock ' + (v.available === 0 ? 'out' : v.available <= 2 ? 'low' : '');
+  s.textContent = v.available === 0 ? 'Out of stock' : v.available <= 2 ? `Only ${v.available} left` : `${v.available} in stock`;
+  $(`#add${i}`).disabled = v.available === 0; $(`#q${i}`).max = Math.min(10, v.available || 1);
+}
+async function addToCart(p, i) {
+  const v = cur(p, i), b = $(`#add${i}`); b.disabled = true;
+  try { await api('/cart', { variantId: v.id, delta: Number($(`#q${i}`).value) || 1 }); $(`#er${i}`).innerHTML = msg('Added to cart', 'ok'); await refreshCart(); }
+  catch (e) { $(`#er${i}`).innerHTML = msg(e.message); }
+  b.disabled = false; setTimeout(() => { const el = $(`#er${i}`); if (el) el.innerHTML = ''; }, 2500);
+}
+
+// ---------- cart ----------
+async function viewCart() {
+  const c = await refreshCart();
+  if (!c.items.length) { $('#main').innerHTML = '<h1>Your cart</h1><p>Your cart is empty.</p><a class="btn" href="#/">Browse clothes</a>'; return; }
+  $('#main').innerHTML = `<h1>Your cart</h1><div id="cerr"></div><table><tr><th>Item</th><th>Qty</th><th class="r">Total</th><th></th></tr>${c.items.map((i) => `<tr><td>${esc(i.name)}<br><span class="muted">${esc(i.size)} / ${esc(i.colour)} · ${naira(i.price_kobo)} each</span></td>
+  <td><div class="row"><button class="sec" data-v="${i.variant_id}" data-d="-1" aria-label="Decrease">−</button>${i.qty}<button class="sec" data-v="${i.variant_id}" data-d="1" aria-label="Increase">+</button></div></td><td class="r">${naira(i.line_kobo)}</td>
+  <td><button class="sec" data-v="${i.variant_id}" data-rm="1">Remove</button></td></tr>`).join('')}</table>
+  <p><strong>Subtotal: ${naira(c.subtotal_kobo)}</strong><br><span class="muted">Delivery is added at the next step.</span></p><a class="btn" href="#/checkout">Continue to delivery</a>`;
+  $('#main').querySelectorAll('button[data-v]').forEach((b) => b.addEventListener('click', async () => {
+    try { await api('/cart', b.dataset.rm ? { variantId: +b.dataset.v, qty: 0 } : { variantId: +b.dataset.v, delta: +b.dataset.d }); } catch (e) { $('#cerr').innerHTML = msg(e.message); return; }
+    viewCart();
+  }));
+}
+
+// ---------- checkout ----------
+async function viewCheckout() {
+  const c = await refreshCart();
+  if (!c.items.length) { location.hash = '#/cart'; return; }
+  const d = CONFIG.delivery;
+  $('#main').innerHTML = `<h1>Delivery details</h1><form id="co" class="card" style="max-width:520px"><div id="cerr"></div>
+  <fieldset style="border:0;padding:0"><legend><strong>How should we get it to you?</strong></legend>${Object.entries(d).map(([k, v], n) => `<label style="font-weight:400"><input type="radio" name="method" value="${k}" ${n === 0 ? 'checked' : ''} style="width:auto"> ${esc(v.label)} — ${v.fee === null ? 'quote from Amaka' : v.fee ? naira(v.fee) : 'free'}</label>`).join('')}</fieldset>
+  <p class="muted">Delivery rates are demo rates, not real courier prices or guarantees.</p>
+  <label for="name">Recipient name</label><input id="name" name="name" required autocomplete="name">
+  <label for="phone">Phone</label><input id="phone" name="phone" required inputmode="tel" autocomplete="tel">
+  <label for="email">Email (for your receipt)</label><input id="email" name="email" type="email" required autocomplete="email">
+  <div id="addr"><label for="address">Delivery address</label><input id="address" name="address" autocomplete="street-address">
+  <div id="cityw"><label for="city">City</label><input id="city" name="city"></div></div>
+  <p><button type="submit">Review invoice</button></p></form>`;
+  const sync = () => { const m = document.querySelector('input[name=method]:checked').value; $('#addr').style.display = m === 'pickup' ? 'none' : ''; $('#cityw').style.display = m === 'ibadan' ? 'none' : ''; };
+  document.querySelectorAll('input[name=method]').forEach((r) => r.addEventListener('change', sync)); sync();
+  $('#co').addEventListener('submit', async (e) => {
+    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+    const f = Object.fromEntries(new FormData(e.target));
+    try { const o = await api('/checkout', f); location.hash = '#/order/' + o.token; } catch (er) { $('#cerr').innerHTML = msg(er.message); b.disabled = false; }
+  });
+}
+
+// ---------- orders ----------
+async function viewOrders() {
+  const { orders } = await api('/orders');
+  $('#main').innerHTML = '<h1>My orders</h1>' + (orders.length ? `<table>${orders.map((o) => `<tr><td><a href="#/order/${o.token}">${o.display_id}</a></td><td>${naira(o.total_kobo)}</td><td><span class="pill ${o.payment_status}">${STATUS[o.payment_status]}</span></td></tr>`).join('')}</table>` : '<p>No orders yet in this browser session.</p>');
+}
+const stable = (o) => ['PAID', 'EXPIRED', 'CANCELLED'].includes(o.payment_status) && o.fulfilment_status !== 'PACKED';
+async function viewOrder(token, refresh) {
+  let o;
+  try { o = await api('/orders/' + token + (refresh ? '/refresh' : ''), refresh ? {} : undefined); }
+  catch (e) { $('#main').innerHTML = msg(e.message) + '<a href="#/">Back to shop</a>'; return; }
+  renderOrder(o, token);
+  clearInterval(pollTimer);
+  if (!['EXPIRED', 'CANCELLED'].includes(o.payment_status) && !(o.payment_status === 'PAID' && o.fulfilment_status === 'DISPATCHED')) {
+    pollTimer = setInterval(() => { if (!document.hidden) pollOrder(token); }, 6000); // pause when tab hidden, stop at stable states
+  }
+}
+async function pollOrder(token) { try { const o = await api('/orders/' + token + '/refresh', {}); if (location.hash.includes(token)) { renderOrder(o, token); if (['EXPIRED', 'CANCELLED'].includes(o.payment_status) || (o.payment_status === 'PAID' && o.fulfilment_status === 'DISPATCHED')) clearInterval(pollTimer); } } catch { /* transient */ } }
+function renderOrder(o, token) {
+  const inv = o.invoice, payable = ['UNPAID', 'PENDING', 'AWAITING_BALANCE'].includes(o.payment_status) && !o.quote_pending;
+  const live = [...o.attempts].reverse().find((a) => a.status === 'PENDING');
+  const caps = CONFIG.capabilities || {};
+  let h = `<h1>${o.display_id} <span class="pill ${o.payment_status}">${STATUS[o.payment_status]}</span></h1>`;
+  if (o.payment_status === 'PAID') h += msg('Payment verified. Thank you! Your receipt is below.', 'ok');
+  if (o.payment_status === 'AWAITING_BALANCE') { const a = o.attempts.find((x) => x.shortfall !== '0'); h += msg(`We received part of your payment. Remaining: ${a.shortfall} ${a.currency}. Your order will not be dispatched until the full amount is verified. Amaka has been alerted.`, 'warn'); }
+  if (o.payment_status === 'REVIEW') h += msg('Amaka is reviewing a payment on this order. No action needed from you right now.', 'warn');
+  if (o.payment_status === 'EXPIRED') h += msg('This order expired and the reserved stock was released. If you already paid, contact Amaka with this order number.', 'err');
+  if (o.quote_pending) h += msg('Delivery to this destination needs a quote. Amaka will confirm the fee here shortly; you can pay after that.', 'warn');
+  h += `<div class="card"><strong>Invoice ${esc(o.invoice_no)}</strong><table>${inv.items.map((i) => `<tr><td>${i.qty} × ${esc(i.name)}<br><span class="muted">${esc(i.size)} / ${esc(i.colour)} @ ${naira(i.unit_kobo)}</span></td><td class="r">${naira(i.line_kobo)}</td></tr>`).join('')}
+  <tr><td>Subtotal</td><td class="r">${naira(inv.subtotal_kobo)}</td></tr>
+  <tr><td>${esc(inv.delivery.label)}</td><td class="r">${inv.delivery.fee_kobo === null ? 'To be quoted' : naira(inv.delivery.fee_kobo)}</td></tr>
+  <tr><td class="muted">${esc(inv.charges[0].label)}</td><td class="r">${naira(inv.charges[0].kobo)}</td></tr>
+  <tr><td><strong>Total payable</strong></td><td class="r"><strong>${o.quote_pending ? 'Pending quote' : naira(o.total_kobo)}</strong></td></tr></table>
+  <div class="muted">Deliver to: ${esc(inv.recipient.name)}, ${esc(inv.recipient.phone)}${inv.recipient.address ? ', ' + esc(inv.recipient.address) + ', ' + esc(inv.recipient.city) : ' (pickup)'}</div></div>`;
+  if (payable && !live) {
+    h += `<h2>Pay for this order</h2><div id="perr"></div><div class="row">
+      <button id="payN" ${caps.NGN?.enabled ? '' : 'disabled'}>Pay in Naira</button><button id="payU" ${caps.USDT?.enabled ? '' : 'disabled'}>Pay in USDT</button>
+      ${o.payment_status === 'UNPAID' && !o.attempts.length ? '<button class="sec" id="edit">Edit order</button>' : ''}</div>`;
+    ['NGN', 'USDT'].forEach((m) => { if (caps[m] && !caps[m].enabled) h += `<p class="muted">${m === 'NGN' ? 'Naira' : 'USDT'}: ${esc(caps[m].reason)}</p>`; });
+    if (CONFIG.mode === 'mock') h += '<p class="muted">Payments here are simulated: no real money moves.</p>';
+  }
+  if (live && payable) h += instructions(live) + '<p><button id="paid">I have paid — check status</button> <span class="muted">This only checks with the payment provider; it does not mark the order paid.</span></p><div id="perr"></div>';
+  if (o.receipt_no) h += `<div class="card" style="margin-top:14px"><strong>Receipt ${esc(o.receipt_no)}</strong><div>Paid ${esc(o.paid_at)}</div>${o.receipts.map((r) => `<div>${r.amount} ${r.currency} · ${r.source === 'MOCK' ? '<b>SIMULATED</b>' : 'verified via Busha (' + esc(r.basis) + ')'}</div>`).join('')}<div class="muted">Settlement: ${o.settlement_status === 'IN_PROVIDER_BALANCE' ? 'held in Amaka’s Busha balance (not a bank payout)' : '-'}</div></div>`;
+  h += `<h2>Fulfilment</h2><p>${o.fulfilment_status === 'NONE' ? 'Not yet packed' : o.fulfilment_status === 'PACKED' ? 'Packed' : 'Dispatched'}${o.tracking ? ` · Courier ${esc(o.courier)} · tracking ${esc(o.tracking)}` : ''}</p>`;
+  h += `<h2>Updates</h2><ul>${o.events.slice().reverse().map((e) => `<li>${esc(e.text)} <span class="muted">${new Date(e.created_at).toLocaleString()}</span></li>`).join('')}</ul>`;
+  const keep = $('#perr')?.innerHTML;
+  $('#main').innerHTML = h;
+  const pay = async (m) => { const b = $('#payN'), u = $('#payU'); if (b) b.disabled = true; if (u) u.disabled = true; try { renderOrder(await api('/orders/' + token + '/pay', { method: m }), token); } catch (e) { $('#perr').innerHTML = msg(e.message); if (b) b.disabled = !caps.NGN?.enabled; if (u) u.disabled = !caps.USDT?.enabled; } };
+  $('#payN')?.addEventListener('click', () => pay('NGN')); $('#payU')?.addEventListener('click', () => pay('USDT'));
+  $('#paid')?.addEventListener('click', async (e) => { e.target.disabled = true; try { renderOrder(await api('/orders/' + token + '/refresh', {}), token); } catch (er) { $('#perr').innerHTML = msg(er.message); e.target.disabled = false; } });
+  $('#edit')?.addEventListener('click', async () => { try { await api('/orders/' + token + '/cancel', {}); location.hash = '#/cart'; } catch (e) { $('#perr').innerHTML = msg(e.message); } });
+  document.querySelectorAll('.copy').forEach((b) => b.addEventListener('click', () => navigator.clipboard?.writeText(b.dataset.c)));
+  if (keep && $('#perr')) $('#perr').innerHTML = keep;
+}
+function instructions(a) {
+  const i = a.instructions, sim = i.simulated ? '<div class="alert warn"><b>SIMULATED</b> — these are not real payment details.</div>' : '';
+  const exp = a.expires_at ? `<div class="muted">Expires: ${new Date(a.expires_at).toLocaleString()}</div>` : '';
+  if (i.type === 'bank_transfer') return `<h2>Pay by bank transfer (naira)</h2><div class="card">${sim}<div>Send exactly <strong>₦${Number(i.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</strong> to:</div><div>Bank: <strong>${esc(i.bank_name)}</strong></div><div>Account name: <strong>${esc(i.account_name)}</strong></div><div>Account number: <strong class="mono">${esc(i.account_number)}</strong><button class="copy sec" data-c="${esc(i.account_number)}">Copy</button></div>${exp}<p class="muted">Pay the exact amount from a bank account in one transfer. Part payments will not release your order.</p></div>`;
+  return `<h2>Pay with USDT</h2><div class="card">${sim}<div>Send exactly <strong>${esc(i.amount)} USDT</strong> on network <strong>${esc(i.network)}</strong> to:</div><div class="mono"><strong>${esc(i.address)}</strong><button class="copy sec" data-c="${esc(i.address)}">Copy</button></div>${exp}<p class="muted">Sending on the wrong network can lose your funds. ${esc(i.note || '')}</p></div>`;
+}
+
+// ---------- chat ----------
+const log = () => $('#chatLog');
+function bubble(text, me) { const d = document.createElement('div'); d.className = 'msg' + (me ? ' me' : ''); d.textContent = text; log().appendChild(d); log().scrollTop = log().scrollHeight; return d; }
+async function chatDo(action, args, echo) {
+  if (echo) bubble(echo, true);
+  let r; try { r = await api('/chat', { action, args }); } catch (e) { bubble('⚠ ' + e.message); return; }
+  for (const m of r.messages) {
+    const d = bubble(m.text);
+    if (m.form) {
+      const f = document.createElement('form');
+      f.innerHTML = m.form.fields.map((x) => `<label>${esc(x.label)}${x.type === 'select' ? `<select name="${x.name}">${x.options.map((o) => `<option value="${o.value}">${esc(o.label)}</option>`).join('')}</select>` : `<input name="${x.name}" type="${x.type}" value="${x.value ?? ''}" ${x.type === 'number' ? 'min="1" max="10"' : ''}>`}</label>`).join('') + `<button>${esc(m.form.submit)}</button>`;
+      f.addEventListener('submit', (e) => { e.preventDefault(); chatDo(m.form.action, Object.fromEntries(new FormData(f))); f.querySelector('button').disabled = true; });
+      d.appendChild(f);
+    }
+    if (m.buttons?.length) {
+      const w = document.createElement('div'); w.className = 'btns';
+      m.buttons.forEach((b) => {
+        const el = document.createElement(b.href ? 'a' : 'button'); el.textContent = b.label;
+        if (b.href) { el.href = b.href; el.className = 'btn'; el.addEventListener('click', () => { if (innerWidth < 641) $('#chat').classList.remove('open'); }); }
+        else el.addEventListener('click', () => chatDo(b.action, b.args, b.label));
+        w.appendChild(el);
+      });
+      d.appendChild(w);
+    }
+  }
+  refreshCart(); if (location.hash === '#/cart') viewCart();
+  if (/^#\/order\//.test(location.hash)) { const t = location.hash.split('/')[2]; pollOrder(t); }
+}
+let started = false;
+function chatStart() { $('#chatBtn').onclick = () => { $('#chat').classList.add('open'); if (!started) { started = true; chatDo('menu'); } $('#chatClose').focus(); }; $('#chatClose').onclick = () => { $('#chat').classList.remove('open'); $('#chatBtn').focus(); }; document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#chat').classList.remove('open'); }); }
+init();
+</script>
+</body>
+</html>

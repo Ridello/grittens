@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Amaka — Merchant dashboard</title>
+<style>
+:root{--navy:#14213d;--teal:#17707a;--line:#ddd6c6}*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,sans-serif;background:#fbf7ef;color:var(--navy)}
+header{background:var(--navy);color:#fff;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}header b{flex:1}
+#banner{text-align:center;font-weight:700;padding:6px;font-size:.85rem;background:#fff3cd;color:#5a4300}#banner.s{background:#d7ecff;color:#0b3a66}
+main{max-width:1100px;margin:0 auto;padding:16px}input,select{font:inherit;padding:7px;border:1px solid #bbb;border-radius:6px;background:#fff}
+button{font:inherit;font-weight:600;background:var(--teal);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer}button.sec{background:#fff;color:var(--navy);border:1px solid var(--navy)}button:disabled{background:#999}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+table{width:100%;border-collapse:collapse;background:#fff}td,th{padding:7px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}tr.click{cursor:pointer}tr.click:hover{background:#f3ede0}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0}.pill{padding:2px 9px;border-radius:99px;font-size:.78rem;font-weight:700;background:#e8e2d3}
+.PAID{background:#d6f0de;color:#1b6b3a}.AWAITING_BALANCE,.REVIEW,.PENDING{background:#fff0cc;color:#8a5200}.EXPIRED,.CANCELLED{background:#f5d6d6;color:#a12626}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}.tabs button{background:#fff;color:var(--navy);border:1px solid var(--navy)}.tabs button.on{background:var(--navy);color:#fff}
+.err{background:#f9e0e0;color:#a12626;padding:10px;border-radius:6px;margin:8px 0}.mono{font-family:ui-monospace,monospace;font-size:.82rem;word-break:break-all}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+</style></head><body>
+<div id="banner"></div>
+<header><b>Amaka’s Closet — Merchant dashboard</b><span id="who"></span><button class="sec" id="out" hidden>Log out</button></header>
+<main id="app"></main>
+<script>
+const $=s=>document.querySelector(s);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const naira=k=>'₦'+(k/100).toLocaleString('en-NG',{minimumFractionDigits:k%100?2:0});
+async function api(p,b){const r=await fetch('/api'+p,{method:b?'POST':'GET',headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined,credentials:'same-origin'});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'Error '+r.status);e.status=r.status;throw e;}return j;}
+let tab='orders',cfg={},sel=null,filters={payment:'',fulfilment:''};
+async function boot(){cfg=await api('/config');const b=$('#banner');b.textContent=cfg.banner;b.className=cfg.mode==='busha'?'s':'';try{await api('/admin/orders');show();}catch(e){login();}}
+function login(msg){$('#out').hidden=true;$('#app').innerHTML=`<form class="card" id="lf" style="max-width:380px"><h2>Merchant login</h2>${msg?`<div class="err">${esc(msg)}</div>`:''}<div class="row"><label>Email<br><input name="email" type="email" required autocomplete="username"></label></div><div class="row"><label>Password<br><input name="password" type="password" required autocomplete="current-password"></label></div><button>Log in</button></form>`;
+$('#lf').onsubmit=async e=>{e.preventDefault();try{await api('/admin/login',Object.fromEntries(new FormData(e.target)));show();}catch(er){login(er.message);}};}
+$('#out').onclick=async()=>{await api('/admin/logout',{});login();};
+function show(){$('#out').hidden=false;const t=['orders','reviews','stock'];if(cfg.mode==='mock')t.push('mock');
+$('#app').innerHTML=`<div class="tabs">${t.map(x=>`<button data-t="${x}" class="${x===tab?'on':''}">${{orders:'Orders',reviews:'Review queue',stock:'Stock',mock:'Simulated payments'}[x]}</button>`).join('')}</div><div id="pane"></div>`;
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;sel=null;show();});load();}
+const guard=async f=>{try{await f();}catch(e){if(e.status===401)return login('Session expired');$('#pane').insertAdjacentHTML('afterbegin',`<div class="err">${esc(e.message)}</div>`);}};
+function load(){guard(async()=>{if(tab==='orders')return orders();if(tab==='reviews')return reviews();if(tab==='stock')return stock();if(tab==='mock')return mock();});}
+async function orders(){const q=new URLSearchParams(filters).toString();const {orders}=await api('/admin/orders?'+q);
+const opt=(a,v)=>a.map(x=>`<option ${x===v?'selected':''} value="${x}">${x||'All'}</option>`).join('');
+$('#pane').innerHTML=`<div class="row">Payment <select id="fp">${opt(['','UNPAID','PENDING','AWAITING_BALANCE','PAID','REVIEW','EXPIRED','CANCELLED'],filters.payment)}</select> Fulfilment <select id="ff">${opt(['','NONE','PACKED','DISPATCHED'],filters.fulfilment)}</select><button class="sec" id="rf">Refresh</button></div>
+<table><tr><th>Order</th><th>Customer</th><th>Total</th><th>Payment</th><th>Fulfilment</th><th>Settlement</th></tr>${orders.map(o=>`<tr class="click" data-id="${o.id}"><td>${o.display_id}</td><td>${esc(o.recipient)}</td><td>${naira(o.total_kobo)}</td><td><span class="pill ${o.payment_status}">${o.payment_status}</span>${o.quote_pending?' <b>(needs delivery quote)</b>':''}</td><td>${o.fulfilment_status}</td><td>${o.settlement_status}</td></tr>`).join('')||'<tr><td colspan=6>No orders</td></tr>'}</table><div id="detail"></div>`;
+$('#fp').onchange=e=>{filters.payment=e.target.value;load();};$('#ff').onchange=e=>{filters.fulfilment=e.target.value;load();};$('#rf').onclick=load;
+document.querySelectorAll('tr.click').forEach(r=>r.onclick=()=>detail(+r.dataset.id));if(sel)detail(sel);}
+async function detail(id){sel=id;await guard(async()=>{const o=await api('/admin/orders/'+id);const inv=o.invoice;
+$('#detail').innerHTML=`<div class="card"><h3>${o.display_id} · ${esc(o.invoice_no)} <span class="pill ${o.payment_status}">${o.payment_status}</span></h3>
+<div>Customer: ${esc(o.recipient.name)}, ${esc(o.recipient.phone)}, ${esc(o.recipient.email)}${o.recipient.address?'<br>'+esc(o.recipient.address)+', '+esc(o.recipient.city):' (pickup)'}</div>
+<table>${inv.items.map(i=>`<tr><td>${i.qty} × ${esc(i.name)} ${esc(i.size)}/${esc(i.colour)}</td><td>${naira(i.line_kobo)}</td></tr>`).join('')}<tr><td>${esc(inv.delivery.label)}</td><td>${inv.delivery.fee_kobo===null?'TO QUOTE':naira(inv.delivery.fee_kobo)}</td></tr><tr><td><b>Total</b></td><td><b>${naira(o.total_kobo)}</b></td></tr></table>
+<div>Fulfilment: <b>${o.fulfilment_status}</b> ${o.tracking?`· ${esc(o.courier)} / ${esc(o.tracking)}`:''} · Settlement: ${o.settlement_status} ${o.settlement_status==='IN_PROVIDER_BALANCE'?'(in provider balance, no bank settlement claimed)':''}</div>
+<div class="row" id="acts">
+${o.quote_pending?`<input id="fee" type="number" min="0" placeholder="Delivery fee (₦)"><button id="setfee">Set delivery fee</button>`:''}
+<button id="pack" ${o.payment_status==='PAID'&&o.fulfilment_status==='NONE'?'':'disabled'}>Mark packed</button>
+<input id="cr" placeholder="Courier"><input id="tr" placeholder="Tracking no."><button id="dsp" ${o.fulfilment_status==='PACKED'?'':'disabled'}>Mark dispatched</button></div>
+<h4>Payment attempts</h4><table><tr><th>Ref</th><th>Provider / ID</th><th>Status</th><th>Amount</th><th>Received</th><th>Shortfall</th></tr>${o.attempts.map(a=>`<tr><td class="mono">${esc(a.ref)}</td><td>${a.provider}<br><span class="mono">${esc(a.provider_id)}</span></td><td>${a.status}</td><td>${a.amount??'-'} ${a.currency??''}</td><td>${a.received??'-'}</td><td>${a.shortfall}</td></tr>`).join('')||'<tr><td colspan=6>None</td></tr>'}</table>
+<h4>Verified receipts / evidence</h4><table>${o.receipts.map(r=>`<tr><td>${r.amount} ${r.currency}</td><td>${r.source==='MOCK'?'<b>SIMULATED</b>':'BUSHA'} · ${esc(r.basis)}</td><td class="mono">${esc(r.evidence_id)}</td><td>${esc(r.at)}</td></tr>`).join('')||'<tr><td>None</td></tr>'}</table>
+<h4>Reviews</h4>${o.reviews.map(r=>`<div>${r.state==='OPEN'?'🟠':'✅'} <b>${r.kind}</b>: ${esc(r.detail)}</div>`).join('')||'None'}</div>`;
+$('#pack').onclick=()=>guard(async()=>{await api(`/admin/orders/${id}/pack`,{});load();});
+$('#dsp').onclick=()=>guard(async()=>{await api(`/admin/orders/${id}/dispatch`,{courier:$('#cr').value,tracking:$('#tr').value});load();});
+$('#setfee')?.addEventListener('click',()=>guard(async()=>{await api(`/admin/orders/${id}/delivery-fee`,{kobo:Math.round(Number($('#fee').value)*100)});load();}));});}
+async function reviews(){const {reviews}=await api('/admin/reviews');$('#pane').innerHTML=`<table><tr><th>#</th><th>Order</th><th>Kind</th><th>Detail</th><th>State</th><th></th></tr>${reviews.map(r=>`<tr><td>${r.id}</td><td>${r.order_id??'unmatched'}</td><td>${r.kind}</td><td>${esc(r.detail)}</td><td>${r.state}</td><td>${r.state==='OPEN'?`<button data-r="${r.id}">Mark resolved</button>`:''}</td></tr>`).join('')||'<tr><td colspan=6>Queue is empty</td></tr>'}</table><p>No automatic refunds or payouts exist in this MVP: resolving a review is a record of your manual decision.</p>`;
+document.querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>guard(async()=>{await api(`/admin/reviews/${b.dataset.r}/resolve`,{});load();}));}
+async function stock(){const {variants}=await api('/admin/variants');$('#pane').innerHTML=`<table><tr><th>Item</th><th>On hand</th><th>Reserved</th><th>Set stock</th></tr>${variants.map(v=>`<tr><td>${esc(v.name)} ${v.size}/${v.colour}</td><td>${v.stock}</td><td>${v.stock-v.available}</td><td><input type="number" min="0" value="${v.stock}" style="width:80px" id="s${v.id}"> <button data-v="${v.id}">Save</button></td></tr>`).join('')}</table>`;
+document.querySelectorAll('button[data-v]').forEach(b=>b.onclick=()=>guard(async()=>{await api(`/admin/variants/${b.dataset.v}/stock`,{stock:+$('#s'+b.dataset.v).value});load();}));}
+async function mock(){const {orders}=await api('/admin/orders');const rows=[];for(const o of orders.filter(o=>['PENDING','AWAITING_BALANCE','UNPAID'].includes(o.payment_status)).slice(0,20)){const d=await api('/admin/orders/'+o.id);for(const a of d.attempts.filter(a=>a.status==='PENDING'&&a.provider==='mock'))rows.push({o,a});}
+$('#pane').innerHTML=`<div class="card"><b>SIMULATED PAYMENTS</b> — these buttons create mock evidence, never real Busha events. Only available in mock mode.</div><table><tr><th>Order</th><th>Attempt</th><th>Amount</th><th>Simulate</th></tr>${rows.map(({o,a})=>`<tr><td>${o.display_id}</td><td class="mono">${a.ref}</td><td>${a.amount} ${a.currency}</td><td>${['full','partial','excess','duplicate','expired'].map(s=>`<button class="sec" data-a="${a.id}" data-s="${s}">${s}</button>`).join(' ')}</td></tr>`).join('')||'<tr><td colspan=4>No pending mock payment attempts. Start a checkout and choose Pay first.</td></tr>'}</table>`;
+document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>guard(async()=>{await api('/admin/mock/simulate',{attemptId:+b.dataset.a,scenario:b.dataset.s});mock();}));}
+boot();
+</script></body></html>
